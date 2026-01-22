@@ -3,7 +3,7 @@ import sys
 import json
 from datetime import datetime
 
-png_root = sys.argv[1]  # z.B. iconruc/<RUN>
+png_root = sys.argv[1] 
 run = sys.argv[2]
 date = sys.argv[3] if len(sys.argv) > 3 else datetime.utcnow().strftime("%Y%m%d")
 
