@@ -157,10 +157,21 @@ jobs:
             echo "ARTIFACT_NAME=grib2-wind" >> $GITHUB_ENV
           fi
 
+      - name: Determine input folder
+        run: |
+          if [[ "${{ matrix.variable }}" == temp* ]]; then
+            echo "INPUT_DIR=data/t2m" >> $GITHUB_ENV
+          elif [[ "${{ matrix.variable }}" == tp* ]]; then
+            echo "INPUT_DIR=data/tp" >> $GITHUB_ENV
+          elif [[ "${{ matrix.variable }}" == wind* ]]; then
+            echo "INPUT_DIR=data/wind" >> $GITHUB_ENV
+          fi
+
+
       - name: Download GRIB2 artifact for ${{ matrix.variable }}
         uses: actions/download-artifact@v4
         with:
-          path: data/
+          path: ${{ env.INPUT_DIR }}
           name: ${{ env.ARTIFACT_NAME }}
 
       - name: Download grid artifact
