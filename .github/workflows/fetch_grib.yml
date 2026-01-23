@@ -99,11 +99,30 @@ jobs:
             fi
           '
           
-      - name: Upload GRIB2 as artifact
+      - name: Upload T2M GRIB2 as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: grib2
-          path: data/
+          name: grib2-t2m
+          path: data/t2m/
+
+      - name: Upload TP GRIB2 as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grib2-tp
+          path: data/tp/
+
+      - name: Upload WIND GRIB2 as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grib2-wind
+          path: data/wind/
+
+      - name: Upload grid file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grid
+          path: data/grid/
+
 
       - name: Upload grid file as artifact
         uses: actions/upload-artifact@v4
@@ -134,17 +153,27 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Download GRIB2 artifact
+      - name: Determine artifact name for ${{ matrix.variable }}
+        run: |
+          if [[ "${{ matrix.variable }}" == temp* ]]; then
+            echo "ARTIFACT_NAME=grib2-t2m" >> $GITHUB_ENV
+          elif [[ "${{ matrix.variable }}" == tp* ]]; then
+            echo "ARTIFACT_NAME=grib2-tp" >> $GITHUB_ENV
+          elif [[ "${{ matrix.variable }}" == wind* ]]; then
+            echo "ARTIFACT_NAME=grib2-wind" >> $GITHUB_ENV
+
+      - name: Download GRIB2 artifact for ${{ matrix.variable }}
         uses: actions/download-artifact@v4
         with:
-          name: grib2
           path: data/
-          
+          name: ${{ env.ARTIFACT_NAME }}
+
       - name: Download grid artifact
         uses: actions/download-artifact@v4
         with:
-          name: grid
           path: data/grid/
+          name: grid
+
 
       - name: Generate PNGs for ${{ matrix.variable }}
         run: |
