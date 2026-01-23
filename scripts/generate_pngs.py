@@ -82,7 +82,7 @@ snow_norm = BoundaryNorm(snow_bounds, snow_colors.N)
 # --------------------------
 # Schwellenwerte
 # --------------------------
-thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp1":1.0, "tp5":5.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "snow1":1.0, "snow5":10.0, "snow10":20.0}
+thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp1":1.0, "tp5":5.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "snow1":1.0, "snow10":10.0, "snow20":20.0}
 
 # --------------------------
 # Kartenparameter
