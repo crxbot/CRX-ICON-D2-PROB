@@ -98,6 +98,21 @@ jobs:
               bunzip2 -f wind_${i_padded}.grib2.bz2
             fi
           '
+
+      - name: Download snow GRIB2 files
+        run: |
+          mkdir -p data/snow
+          cd data/snow
+          seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
+            i_padded=$(printf "%03d" {})
+            URL="https://opendata.dwd.de/weather/nwp/icon-d2-eps/grib/${{ env.RUN }}/h_snow/icon-d2-eps_germany_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_h_snow.grib2.bz2"
+            wget -O snow_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
+            if [ -f "snow_${i_padded}.grib2.bz2" ]; then
+              bunzip2 -f snow_${i_padded}.grib2.bz2
+            fi
+          '
+
+      
           
       - name: Upload T2M GRIB2 as artifact
         uses: actions/upload-artifact@v4
@@ -117,6 +132,12 @@ jobs:
           name: grib2-wind
           path: data/wind/
 
+      - name: Upload SNOW GRIB2 as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grib2-snow
+          path: data/snow/
+
       - name: Upload grid file as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -133,8 +154,8 @@ jobs:
     needs: fetch_and_generate
     strategy:
       matrix:
-        variable: [temp30, temp20, temp0, tp1, tp5, tp10, wind60, wind90, wind120]
-      max-parallel: 9
+        variable: [temp30, temp20, temp0, tp1, tp5, tp10, wind60, wind90, wind120, snow1, snow10, snow20]
+      max-parallel: 12
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -155,6 +176,8 @@ jobs:
             echo "ARTIFACT_NAME=grib2-tp" >> $GITHUB_ENV
           elif [[ "${{ matrix.variable }}" == wind* ]]; then
             echo "ARTIFACT_NAME=grib2-wind" >> $GITHUB_ENV
+          elif [[ "${{ matrix.variable }}" == snow* ]]; then
+            echo "ARTIFACT_NAME=grib2-snow" >> $GITHUB_ENV
           fi
 
       - name: Determine input folder
@@ -165,6 +188,8 @@ jobs:
             echo "INPUT_DIR=data/tp" >> $GITHUB_ENV
           elif [[ "${{ matrix.variable }}" == wind* ]]; then
             echo "INPUT_DIR=data/wind" >> $GITHUB_ENV
+          elif [[ "${{ matrix.variable }}" == snow* ]]; then
+            echo "INPUT_DIR=data/snow" >> $GITHUB_ENV
           fi
 
 
@@ -203,6 +228,12 @@ jobs:
             input_dir="data/wind"
           elif [ "${{ matrix.variable }}" = "wind120" ]; then
             input_dir="data/wind" 
+          elif [ "${{ matrix.variable }}" = "snow1" ]; then
+            input_dir="data/snow" 
+          elif [ "${{ matrix.variable }}" = "snow10" ]; then
+            input_dir="data/snow" 
+          elif [ "${{ matrix.variable }}" = "snow20" ]; then
+            input_dir="data/snow" 
           fi
           python scripts/generate_pngs.py \
             "$input_dir" \
