@@ -124,12 +124,6 @@ jobs:
           path: data/grid/
 
 
-      - name: Upload grid file as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: grid
-          path: data/grid/
-
       - name: Delete GRIB2 files (local cleanup)
         run: rm -rf data/
 
