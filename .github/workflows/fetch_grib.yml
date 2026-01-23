@@ -192,7 +192,7 @@ jobs:
       - name: Download all PNGs artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: icond2-*
+          pattern: icond2eps-*
           path: icond2eps_raw
 
       - name: Merge PNG folders into one structure
