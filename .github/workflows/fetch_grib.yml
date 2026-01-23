@@ -155,6 +155,7 @@ jobs:
             echo "ARTIFACT_NAME=grib2-tp" >> $GITHUB_ENV
           elif [[ "${{ matrix.variable }}" == wind* ]]; then
             echo "ARTIFACT_NAME=grib2-wind" >> $GITHUB_ENV
+          fi
 
       - name: Download GRIB2 artifact for ${{ matrix.variable }}
         uses: actions/download-artifact@v4
