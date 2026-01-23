@@ -73,7 +73,7 @@ wind_norm = BoundaryNorm(wind_bounds, wind_colors.N)
 # --------------------------
 # Schwellenwerte
 # --------------------------
-thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp1":1.0, "tp5":5.0, "tp10":10.0}
+thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp1":1.0, "tp5":5.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0}
 
 # --------------------------
 # Kartenparameter
@@ -147,7 +147,11 @@ for filename in sorted(os.listdir(data_dir)):
 
         # Kleine Werte ignorieren
         data[data < 0.1] = np.nan
-
+    elif var_type in ["wind60", "wind90", "wind120"]:
+        if "max_i10fg" not in ds:
+            print(f"Keine 10m Windkomponenten in {filename} ds.keys(): {ds.keys()}")
+            continue
+        data = ds["max_i10fg"].values * 3.6  # m/s zu km/h
 
     else:
         print(f"Unbekannter var_type {var_type}")
@@ -188,6 +192,9 @@ for filename in sorted(os.listdir(data_dir)):
     elif var_type in ["tp1", "tp5", "tp10"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=tp_colors, norm=tp_norm, shading="auto")
+    elif var_type in ["wind60", "wind90", "wind120"]:
+        im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
+                        cmap=wind_colors, norm=wind_norm, shading="auto")
 
     ax.add_feature(states, edgecolor="#2C2C2C", linewidth=1)
     ax.add_feature(borders, linestyle=":")
@@ -208,8 +215,8 @@ for filename in sorted(os.listdir(data_dir)):
     # --------------------------
     legend_h_px = 50
     legend_bottom_px = 45
-    if var_type in ["temp30","temp20","temp0", "tp1", "tp5", "tp10"]:
-        bounds = temp_bounds if var_type in ["temp30","temp20","temp0"] else tp_bounds
+    if var_type in ["temp30","temp20","temp0", "tp1", "tp5", "tp10", "wind60", "wind90", "wind120"]:
+        bounds = temp_bounds if var_type in ["temp30","temp20","temp0"] else tp_bounds if var_type in ["tp1", "tp5", "tp10"] else wind_bounds
         cbar_ax = fig.add_axes([0.03, legend_bottom_px / FIG_H_PX, 0.94, legend_h_px / FIG_H_PX])
         cbar = fig.colorbar(im, cax=cbar_ax, orientation="horizontal", ticks=bounds)
         cbar.ax.tick_params(colors="black", labelsize=7)
@@ -264,7 +271,10 @@ for filename in sorted(os.listdir(data_dir)):
         "temp0": "Temperatur <0°C (%)",
         "tp1": "Niederschlag, 1Std >1mm (%)",
         "tp5": "Niederschlag, 1Std >5mm (%)",
-        "tp10": "Niederschlag, 1Std >10mm (%)"
+        "tp10": "Niederschlag, 1Std >10mm (%)",
+        "wind60": "Windböen >60 km/h (%)",
+        "wind90": "Windböen >90 km/h (%)",
+        "wind120": "Windböen >120 km/h (%)"
     }
     left_text = footer_texts.get(var_type, var_type)
     if run_time_utc is not None:
