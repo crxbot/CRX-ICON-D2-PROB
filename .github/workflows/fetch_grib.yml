@@ -154,7 +154,7 @@ jobs:
     needs: fetch_and_generate
     strategy:
       matrix:
-        variable: [temp30, temp20, temp0, tp1, tp5, tp10, wind60, wind90, wind120, snow1, snow10, snow20]
+        variable: [temp30, temp20, temp0, tp01, tp1, tp10, wind60, wind90, wind120, snow1, snow10, snow20]
       max-parallel: 12
     steps:
       - name: Checkout Repo
@@ -216,9 +216,9 @@ jobs:
             input_dir="data/t2m"
           elif [ "${{ matrix.variable }}" = "temp0" ]; then
             input_dir="data/t2m"
-          elif [ "${{ matrix.variable }}" = "tp1" ]; then
+          elif [ "${{ matrix.variable }}" = "tp01" ]; then
             input_dir="data/tp"
-          elif [ "${{ matrix.variable }}" = "tp5" ]; then
+          elif [ "${{ matrix.variable }}" = "tp1" ]; then
             input_dir="data/tp"  
           elif [ "${{ matrix.variable }}" = "tp10" ]; then
             input_dir="data/tp"
