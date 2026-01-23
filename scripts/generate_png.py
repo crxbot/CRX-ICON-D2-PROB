@@ -148,10 +148,10 @@ for filename in sorted(os.listdir(data_dir)):
         # Kleine Werte ignorieren
         data[data < 0.1] = np.nan
     elif var_type in ["wind60", "wind90", "wind120"]:
-        if "max_i10fg" not in ds:
+        if "fg10" not in ds:
             print(f"Keine 10m Windkomponenten in {filename} ds.keys(): {ds.keys()}")
             continue
-        data = ds["max_i10fg"].values * 3.6  # m/s zu km/h
+        data = ds["fg10"].values * 3.6  # m/s zu km/h
 
     else:
         print(f"Unbekannter var_type {var_type}")
