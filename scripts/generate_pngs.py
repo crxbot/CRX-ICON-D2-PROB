@@ -216,8 +216,8 @@ for filename in sorted(os.listdir(data_dir)):
                         cmap=snow_colors, norm=snow_norm, shading="auto")
 
     ax.add_feature(states, edgecolor="#2C2C2C", linewidth=1)
-    ax.add_feature(borders, linestyle=":")
-    ax.add_feature(coast)
+    ax.add_feature(cfeature.BORDERS.with_scale("10m"), edgecolor="black", linewidth=0.7)
+    ax.add_feature(cfeature.COASTLINE.with_scale("10m"), edgecolor="black", linewidth=0.7)
 
     for _, city in cities.iterrows():
         ax.plot(city["lon"], city["lat"], "o", markersize=6,
