@@ -215,7 +215,7 @@ for filename in sorted(os.listdir(data_dir)):
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=snow_colors, norm=snow_norm, shading="auto")
 
-    ax.add_feature(states, edgecolor="#2C2C2C", linewidth=1)
+    ax.add_feature(cfeature.STATES.with_scale("10m"), edgecolor="black", linewidth=0.7)
     ax.add_feature(cfeature.BORDERS.with_scale("10m"), edgecolor="black", linewidth=0.7)
     ax.add_feature(cfeature.COASTLINE.with_scale("10m"), edgecolor="black", linewidth=0.7)
 
