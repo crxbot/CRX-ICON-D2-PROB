@@ -91,7 +91,7 @@ snowfall_norm = BoundaryNorm(snowfall_bounds, snowfall_colors.N)
 # --------------------------
 # Schwellenwerte
 # --------------------------
-thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp01":0.1, "tp1":1.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "snow1":1.0, "snow10":10.0, "snow20":20.0, "snowfall01":0.1, "snowfall1":1.0, "snowfall10":10.0}
+thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp01":0.1, "tp1":1.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "shight1":1.0, "shight10":10.0, "shight20":20.0, "snowfall01":0.1, "snowfall1":1.0, "snowfall10":10.0}
 
 # --------------------------
 # Kartenparameter
@@ -180,7 +180,7 @@ for filename in sorted(os.listdir(data_dir)):
             continue
         data = ds["fg10"].values * 3.6  # m/s zu km/h
 
-    elif var_type in ["snow1", "snow10", "snow20"]:
+    elif var_type in ["shight1", "shight10", "shight20"]:
         if "sde" not in ds:
             print(f"Keine Schneehöhenvariable in {filename}")
             continue
@@ -257,7 +257,7 @@ for filename in sorted(os.listdir(data_dir)):
     elif var_type in ["wind60", "wind90", "wind120"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=wind_colors, norm=wind_norm, shading="auto")
-    elif var_type in ["snow1", "snow10", "snow20"]:
+    elif var_type in ["shight1", "shight10", "shight20"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=snow_colors, norm=snow_norm, shading="auto")
     elif var_type in ["snowfall01", "snowfall1", "snowfall10"]:
@@ -283,8 +283,8 @@ for filename in sorted(os.listdir(data_dir)):
     # --------------------------
     legend_h_px = 50
     legend_bottom_px = 45
-    if var_type in ["temp30","temp20","temp0", "tp01", "tp1", "tp10", "wind60", "wind90", "wind120", "snow1", "snow10", "snow20", "snowfall01", "snowfall1", "snowfall10"]:
-        bounds = temp_bounds if var_type in ["temp30","temp20","temp0"] else tp_bounds if var_type in ["tp01", "tp1", "tp10"] else wind_bounds if var_type in ["wind60", "wind90", "wind120"] else snow_bounds if var_type in ["snow1", "snow10", "snow20"] else snowfall_bounds
+    if var_type in ["temp30","temp20","temp0", "tp01", "tp1", "tp10", "wind60", "wind90", "wind120", "shight1", "shight10", "shight20", "snowfall01", "snowfall1", "snowfall10"]:
+        bounds = temp_bounds if var_type in ["temp30","temp20","temp0"] else tp_bounds if var_type in ["tp01", "tp1", "tp10"] else wind_bounds if var_type in ["wind60", "wind90", "wind120"] else snow_bounds if var_type in ["shight1", "shight10", "shight20"] else snowfall_bounds
         cbar_ax = fig.add_axes([0.03, legend_bottom_px / FIG_H_PX, 0.94, legend_h_px / FIG_H_PX])
         cbar = fig.colorbar(im, cax=cbar_ax, orientation="horizontal", ticks=bounds)
         cbar.ax.tick_params(colors="black", labelsize=7)
@@ -343,9 +343,9 @@ for filename in sorted(os.listdir(data_dir)):
         "wind60": "Windböen >60 km/h (%)",
         "wind90": "Windböen >90 km/h (%)",
         "wind120": "Windböen >120 km/h (%)",
-        "snow1": "Schneehöhe >1 cm (%)",
-        "snow10": "Schneehöhe >10 cm (%)",
-        "snow20": "Schneehöhe >20 cm (%)",
+        "shight1": "Schneehöhe >1 cm (%)",
+        "shight10": "Schneehöhe >10 cm (%)",
+        "shight20": "Schneehöhe >20 cm (%)",
         "snowfall01": "Schneefall, 6Std >0.1 cm (%)",
         "snowfall1": "Schneefall, 6Std >1 cm (%)",
         "snowfall10": "Schneefall, 6Std >10 cm (%)"
