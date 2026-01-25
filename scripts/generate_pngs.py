@@ -78,11 +78,20 @@ snow_colors = ListedColormap([
 ])
 
 snow_norm = BoundaryNorm(snow_bounds, snow_colors.N)
+
+snowfall_bounds = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99]
+snowfall_colors = ListedColormap([
+    "#FE9226", "#FFC02B", "#FFEE32", "#DDE02D", "#BBD629",
+    "#9AC925", "#79BC21", "#37A319", "#367C40",
+    "#366754", "#4A3E7C", "#593192"
+])
+
+snowfall_norm = BoundaryNorm(snowfall_bounds, snowfall_colors.N)
     
 # --------------------------
 # Schwellenwerte
 # --------------------------
-thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp01":0.1, "tp1":1.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "snow1":1.0, "snow10":10.0, "snow20":20.0}
+thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp01":0.1, "tp1":1.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "snow1":1.0, "snow10":10.0, "snow20":20.0, "snowfall01":0.1, "snowfall1":1.0, "snowfall10":10.0}
 
 # --------------------------
 # Kartenparameter
@@ -176,6 +185,35 @@ for filename in sorted(os.listdir(data_dir)):
             print(f"Keine Schneehöhenvariable in {filename}")
             continue
         data = ds["sde"].values * 100
+    elif var_type in ["snowfall01", "snowfall1", "snowfall10"]:
+        delta_hours = 6
+
+        all_files = sorted([f for f in os.listdir(data_dir) if f.endswith(".grib2")])
+        all_ds = {f: cfgrib.open_dataset(os.path.join(data_dir,f)) for f in all_files}
+
+        filename_index = all_files.index(filename)
+        ds_now = all_ds[filename]
+
+        if "lsfwe" not in ds_now:
+            print(f"Keine lsfwe in {filename}")
+            continue
+
+        # Snowfall-Werte, negatives auf 0
+        snow_now = np.clip(ds_now["lsfwe"].values, 0, None)  # shape: (20, 542040)
+
+        # --- Akkumulation ---
+        if filename_index < delta_hours:
+            # jede Datei akkumuliert nur die Stunden seit Start
+            data = snow_now
+            print(f"{filename}: {filename_index+1}h akkumuliert (noch <6h)")
+        else:
+            # Differenz zur Datei delta_hours vorher
+            ds_prev = all_ds[all_files[filename_index - delta_hours]]
+            snow_prev = np.clip(ds_prev["lsfwe"].values, 0, None)
+            data = np.maximum(snow_now - snow_prev, 0)
+            print(f"{filename}: 6h Niederschlag berechnet")
+
+        print(f"OUTPUT data.shape: {data.shape}")  # (20, 542040)
 
     else:
         print(f"Unbekannter var_type {var_type}")
@@ -219,10 +257,12 @@ for filename in sorted(os.listdir(data_dir)):
     elif var_type in ["wind60", "wind90", "wind120"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=wind_colors, norm=wind_norm, shading="auto")
-
     elif var_type in ["snow1", "snow10", "snow20"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=snow_colors, norm=snow_norm, shading="auto")
+    elif var_type in ["snowfall01", "snowfall1", "snowfall10"]:
+        im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
+                        cmap=snowfall_colors, norm=snowfall_norm, shading="auto")
 
     ax.add_feature(cfeature.STATES.with_scale("10m"), edgecolor="#2C2C2C", linewidth=1)
     ax.add_feature(cfeature.BORDERS.with_scale("10m"), edgecolor="black", linewidth=0.7)
@@ -243,8 +283,8 @@ for filename in sorted(os.listdir(data_dir)):
     # --------------------------
     legend_h_px = 50
     legend_bottom_px = 45
-    if var_type in ["temp30","temp20","temp0", "tp01", "tp1", "tp10", "wind60", "wind90", "wind120", "snow1", "snow10", "snow20"]:
-        bounds = temp_bounds if var_type in ["temp30","temp20","temp0"] else tp_bounds if var_type in ["tp01", "tp1", "tp10"] else wind_bounds if var_type in ["wind60", "wind90", "wind120"] else snow_bounds
+    if var_type in ["temp30","temp20","temp0", "tp01", "tp1", "tp10", "wind60", "wind90", "wind120", "snow1", "snow10", "snow20", "snowfall01", "snowfall1", "snowfall10"]:
+        bounds = temp_bounds if var_type in ["temp30","temp20","temp0"] else tp_bounds if var_type in ["tp01", "tp1", "tp10"] else wind_bounds if var_type in ["wind60", "wind90", "wind120"] else snow_bounds if var_type in ["snow1", "snow10", "snow20"] else snowfall_bounds
         cbar_ax = fig.add_axes([0.03, legend_bottom_px / FIG_H_PX, 0.94, legend_h_px / FIG_H_PX])
         cbar = fig.colorbar(im, cax=cbar_ax, orientation="horizontal", ticks=bounds)
         cbar.ax.tick_params(colors="black", labelsize=7)
@@ -305,7 +345,10 @@ for filename in sorted(os.listdir(data_dir)):
         "wind120": "Windböen >120 km/h (%)",
         "snow1": "Schneehöhe >1 cm (%)",
         "snow10": "Schneehöhe >10 cm (%)",
-        "snow20": "Schneehöhe >20 cm (%)"
+        "snow20": "Schneehöhe >20 cm (%)",
+        "snowfall01": "Schneefall, 6Std >0.1 cm (%)",
+        "snowfall1": "Schneefall, 6Std >1 cm (%)",
+        "snowfall10": "Schneefall, 6Std >10 cm (%)"
     }
     left_text = footer_texts.get(var_type, var_type)
     if run_time_utc is not None:
