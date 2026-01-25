@@ -212,7 +212,7 @@ jobs:
           elif [[ "${{ matrix.variable }}" == snow* ]]; then
             echo "INPUT_DIR=data/snow" >> $GITHUB_ENV
           elif [[ "${{ matrix.variable }}" == snowfall* ]]; then
-            echo "INPUT_DIR=data/snow" >> $GITHUB_ENV
+            echo "INPUT_DIR=data/snowfall" >> $GITHUB_ENV
           fi
 
 
