@@ -140,22 +140,31 @@ for filename in sorted(os.listdir(data_dir)):
             continue
         data = ds["t2m"].values - 273.15
     elif var_type in ["tp01", "tp1", "tp10"]:
-    # Suche die Niederschlagsvariable
-        if "tp" not in ds:
-            print(f"Keine Niederschlagsvariable in {filename}")
+        delta_hours = 6
+
+        all_files = sorted([f for f in os.listdir(data_dir) if f.endswith(".grib2")])
+        all_ds = {f: cfgrib.open_dataset(os.path.join(data_dir,f)) for f in all_files}
+
+        filename_index = all_files.index(filename)
+        ds_now = all_ds[filename]
+
+        if "tp" not in ds_now:
+            print(f"Keine tp in {filename}")
             continue
 
-        tp_all = ds["tp"].values  # shape: (member, time, npoints) oder (member, npoints)
+        # Letzten Zeitschritt extrahieren & negatives entfernen
+        tp_now_last = np.clip(ds_now["tp"].values[:, -1, :], 0, None)
 
-        # Berechne die Niederschlagsmenge dieser Datei
-        if tp_all.ndim == 3:  # (member, time, npoints)
-            # Differenz zwischen 4. und 1. Zeitschritt, falls vorhanden
-            data = tp_all[:,3,:] - tp_all[:,0,:] if tp_all.shape[1] > 3 else tp_all[:,0,:]
-        else:  # (member, npoints)
-            data = tp_all
+        if filename_index < delta_hours:
+            data = tp_now_last
+            print(f"{filename}: {filename_index+1}h akkumuliert (noch <6h)")
+        else:
+            ds_prev = all_ds[all_files[filename_index - delta_hours]]
+            tp_prev_last = np.clip(ds_prev["tp"].values[:, -1, :], 0, None)
+            data = np.maximum(tp_now_last - tp_prev_last, 0)
+            print(f"{filename}: 6h Niederschlag berechnet")
 
-        # Kleine Werte ignorieren
-        data[data < 0.1] = np.nan
+        print(f"OUTPUT data.shape: {data.shape}")
     elif var_type in ["wind60", "wind90", "wind120"]:
         if "fg10" not in ds:
             print(f"Keine 10m Windkomponenten in {filename} ds.keys(): {ds.keys()}")
@@ -288,9 +297,9 @@ for filename in sorted(os.listdir(data_dir)):
         "temp30": "Temperatur >30°C (%)",
         "temp20": "Temperatur >20°C (%)",
         "temp0": "Temperatur <0°C (%)",
-        "tp01": "Niederschlag, 1Std >0.1mm (%)",
-        "tp1": "Niederschlag, 1Std >1mm (%)",
-        "tp10": "Niederschlag, 1Std >10mm (%)",
+        "tp01": "Niederschlag, 6Std >0.1mm (%)",
+        "tp1": "Niederschlag, 6Std >1mm (%)",
+        "tp10": "Niederschlag, 6Std >10mm (%)",
         "wind60": "Windböen >60 km/h (%)",
         "wind90": "Windböen >90 km/h (%)",
         "wind120": "Windböen >120 km/h (%)",
