@@ -128,7 +128,7 @@ lon_reg = np.arange(extent[0], extent[1], grid_resolution)
 lat_reg = np.arange(extent[2], extent[3], grid_resolution)
 lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
 
-acc_tp_prev = None  # für akkumulierten Niederschlag
+prev_snowfall = None
 
 # --------------------------
 # GRIB Dateien durchgehen
@@ -149,31 +149,22 @@ for filename in sorted(os.listdir(data_dir)):
             continue
         data = ds["t2m"].values - 273.15
     elif var_type in ["tp01", "tp1", "tp10"]:
-        delta_hours = 6
-
-        all_files = sorted([f for f in os.listdir(data_dir) if f.endswith(".grib2")])
-        all_ds = {f: cfgrib.open_dataset(os.path.join(data_dir,f)) for f in all_files}
-
-        filename_index = all_files.index(filename)
-        ds_now = all_ds[filename]
-
-        if "tp" not in ds_now:
-            print(f"Keine tp in {filename}")
+    # Suche die Niederschlagsvariable
+        if "tp" not in ds:
+            print(f"Keine Niederschlagsvariable in {filename}")
             continue
 
-        # Letzten Zeitschritt extrahieren & negatives entfernen
-        tp_now_last = np.clip(ds_now["tp"].values[:, -1, :], 0, None)
+        tp_all = ds["tp"].values  # shape: (member, time, npoints) oder (member, npoints)
 
-        if filename_index < delta_hours:
-            data = tp_now_last
-            print(f"{filename}: {filename_index+1}h akkumuliert (noch <6h)")
-        else:
-            ds_prev = all_ds[all_files[filename_index - delta_hours]]
-            tp_prev_last = np.clip(ds_prev["tp"].values[:, -1, :], 0, None)
-            data = np.maximum(tp_now_last - tp_prev_last, 0)
-            print(f"{filename}: 6h Niederschlag berechnet")
+        # Berechne die Niederschlagsmenge dieser Datei
+        if tp_all.ndim == 3:  # (member, time, npoints)
+            # Differenz zwischen 4. und 1. Zeitschritt, falls vorhanden
+            data = tp_all[:,3,:] - tp_all[:,0,:] if tp_all.shape[1] > 3 else tp_all[:,0,:]
+        else:  # (member, npoints)
+            data = tp_all
 
-        print(f"OUTPUT data.shape: {data.shape}")
+        # Kleine Werte ignorieren
+        data[data < 0.1] = np.nan
     elif var_type in ["wind60", "wind90", "wind120"]:
         if "fg10" not in ds:
             print(f"Keine 10m Windkomponenten in {filename} ds.keys(): {ds.keys()}")
@@ -186,34 +177,23 @@ for filename in sorted(os.listdir(data_dir)):
             continue
         data = ds["sde"].values * 100
     elif var_type in ["snowfall01", "snowfall1", "snowfall10"]:
-        delta_hours = 6
-
-        all_files = sorted([f for f in os.listdir(data_dir) if f.endswith(".grib2")])
-        all_ds = {f: cfgrib.open_dataset(os.path.join(data_dir,f)) for f in all_files}
-
-        filename_index = all_files.index(filename)
-        ds_now = all_ds[filename]
-
-        if "lsfwe" not in ds_now:
-            print(f"Keine lsfwe in {filename}")
+        if "lsfwe" not in ds:
+            print(f"Keine Schneefallvariable in {filename}")
             continue
-
-        # Snowfall-Werte, negatives auf 0
-        snow_now = np.clip(ds_now["lsfwe"].values, 0, None)  # shape: (20, 542040)
-
-        # --- Akkumulation ---
-        if filename_index < delta_hours:
-            # jede Datei akkumuliert nur die Stunden seit Start
-            data = snow_now
-            print(f"{filename}: {filename_index+1}h akkumuliert (noch <6h)")
+        now_snowfall = ds["lsfwe"].values
+        # Berechne die Schneefallmenge dieser Datei
+        if prev_snowfall is not None:
+            # Schneefall dieser Stunde = Differenz
+            hourly_snow = now_snowfall - prev_snowfall
+            hourly_snow[hourly_snow < 0.1] = 0  # kleine Werte ignorieren
         else:
-            # Differenz zur Datei delta_hours vorher
-            ds_prev = all_ds[all_files[filename_index - delta_hours]]
-            snow_prev = np.clip(ds_prev["lsfwe"].values, 0, None)
-            data = np.maximum(snow_now - snow_prev, 0)
-            print(f"{filename}: 6h Niederschlag berechnet")
+            # erste Datei: nur übernehmen, sonst keine Differenz möglich
+            hourly_snow = now_snowfall.copy()
+            hourly_snow[hourly_snow < 0.1] = 0
 
-        print(f"OUTPUT data.shape: {data.shape}")  # (20, 542040)
+        prev_snowfall = now_snowfall.copy()  # für nächste Stunde speichern
+
+        data = hourly_snow
 
     else:
         print(f"Unbekannter var_type {var_type}")
@@ -337,18 +317,18 @@ for filename in sorted(os.listdir(data_dir)):
         "temp30": "Temperatur >30°C (%)",
         "temp20": "Temperatur >20°C (%)",
         "temp0": "Temperatur <0°C (%)",
-        "tp01": "Niederschlag, 6Std >0.1mm (%)",
-        "tp1": "Niederschlag, 6Std >1mm (%)",
-        "tp10": "Niederschlag, 6Std >10mm (%)",
+        "tp01": "Niederschlag, 1Std >0.1mm (%)",
+        "tp1": "Niederschlag, 1Std >1mm (%)",
+        "tp10": "Niederschlag, 1Std >10mm (%)",
         "wind60": "Windböen >60 km/h (%)",
         "wind90": "Windböen >90 km/h (%)",
         "wind120": "Windböen >120 km/h (%)",
         "shight1": "Schneehöhe >1 cm (%)",
         "shight10": "Schneehöhe >10 cm (%)",
         "shight20": "Schneehöhe >20 cm (%)",
-        "snowfall01": "Schneefall, 6Std >0.1 cm (%)",
-        "snowfall1": "Schneefall, 6Std >1 cm (%)",
-        "snowfall10": "Schneefall, 6Std >10 cm (%)"
+        "snowfall01": "Schneefall, 1Std >0.1 cm (%)",
+        "snowfall1": "Schneefall, 1Std >1 cm (%)",
+        "snowfall10": "Schneefall, 1Std >10 cm (%)"
     }
     left_text = footer_texts.get(var_type, var_type)
     if run_time_utc is not None:
